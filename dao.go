@@ -4,6 +4,17 @@ import (
 	"encoding/json"
 )
 
+type PlasticClusterData struct {
+	Lat string `json:"lat"`
+	Long string `json:"long"`
+	Timestamp string `json:"timestamp"`
+	Description string `json:"description"` // or size?
+}
+
+type PlasticJson struct {
+	Date string `json:"date"`
+	PlasticClusterDataArr []PlasticClusterData `json:"plastic_cluster_data"`
+}
 type Message struct {
     Name string
     Body string
