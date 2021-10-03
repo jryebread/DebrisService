@@ -11,6 +11,7 @@ type Message struct {
 }
 
 func retrieveDynamoJsonInfo(date string) []byte {
+	//TODO: integrate with dynamodb to retrieve debris data for this date
 	m := Message{"Alice", "Hello", 1294706395881547000}
 	b, err := json.Marshal(m)
 	if err != nil {
