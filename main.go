@@ -37,8 +37,15 @@ func response(body interface{}, statusCode int) events.APIGatewayProxyResponse {
 func Handler(req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	rawDate, found := req.PathParameters["date"]
 	if !found {
-		fmt.Println("error, no date parameter found in path param")
-		return response("no date path paramter supplied", http.StatusBadRequest), nil
+		fmt.Println("no date parameter found in path, returning all date keys")
+		dates, err := GetAllDatesFromTable(dynaClient)
+		if err != nil {
+			fmt.Errorf("error trying to get key dates from dynamo")
+			return response(ErrorBody{
+				  aws.String(err.Error()),
+			  }, http.StatusInternalServerError), err
+		}
+		return response(dates, http.StatusOK), nil
 	}
 	date, err := url.QueryUnescape(rawDate)
 	if err != nil {

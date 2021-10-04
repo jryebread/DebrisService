@@ -2,17 +2,57 @@ package main
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
+	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
 )
 
-const tableName = "debris_data"
+const tableName = "plastic-debris-table"
 
-func GetPlasticFromDate(date string, 
+func GetAllDatesFromTable(dynaClient dynamodbiface.DynamoDBAPI) (*DateResponse, error) {
+	proj := expression.NamesList(expression.Name("date"))
+	expr, err := expression.NewBuilder().WithProjection(proj).Build()
+	if err != nil {
+		fmt.Printf("error trying to build proj %s", err.Error())
+		return nil, err
+	}
+	input := &dynamodb.ScanInput{
+		ExpressionAttributeNames:  expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
+		TableName:                 aws.String(tableName),
+		ProjectionExpression:      expr.Projection(),
+	}
+
+	result, err := dynaClient.Scan(input)
+	if err != nil {
+		fmt.Printf("error trying to scan dynamo with input %s", err.Error())
+		return nil, err
+	}
+
+	num_items := 0
+	retVal := DateResponse{}	
+	for _, i := range result.Items {
+		item := PlasticJson{}
+		err = dynamodbattribute.UnmarshalMap(i, &item)
+
+		if err != nil {
+			fmt.Printf("error trying to unmarshal dynamo entry %s", err.Error())
+			return nil, err
+		}
+
+		num_items += 1
+		retVal.Dates = append(retVal.Dates, item.Date)
+	}
+	fmt.Println("Found this many items for scan:", num_items)
+	return &retVal, nil
+}
+
+func GetPlasticFromDate(date string,
 	dynaClient dynamodbiface.DynamoDBAPI) (*PlasticJson, error) {
 	input := &dynamodb.GetItemInput{
 		TableName: aws.String(tableName),
